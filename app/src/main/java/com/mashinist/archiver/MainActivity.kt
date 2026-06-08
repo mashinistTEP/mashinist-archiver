@@ -4,7 +4,6 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.os.Environment
-import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -90,22 +89,24 @@ class MainActivity : AppCompatActivity() {
         builder.setTitle("Создать архив")
         
         val view = layoutInflater.inflate(R.layout.dialog_create_archive, null)
-        val fileNameEdit = view.findViewById<EditText>(R.id.fileNameEdit)
-        val formatSpinner = view.findViewById<Spinner>(R.id.formatSpinner)
-        
-        val formats = arrayOf(".mashinist", ".tep70bs", ".tep")
-        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, formats)
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        formatSpinner.adapter = adapter
+        val archiveNameEdit = view.findViewById<EditText>(R.id.archiveNameEdit)
+        val radioMashinist = view.findViewById<RadioButton>(R.id.radioMashinist)
+        val radioTep70bs = view.findViewById<RadioButton>(R.id.radioTep70bs)
+        val radioTep = view.findViewById<RadioButton>(R.id.radioTep)
         
         builder.setView(view)
         builder.setPositiveButton("Создать") { dialog, _ ->
-            val fileName = fileNameEdit.text.toString()
-            val format = formatSpinner.selectedItem.toString()
+            val fileName = archiveNameEdit.text.toString()
+            val format = when {
+                radioTep70bs.isChecked -> "tep70bs"
+                radioTep.isChecked -> "tep"
+                else -> "mashinist"
+            }
             
             if (fileName.isNotEmpty()) {
-                val outputPath = "$currentPath/$fileName$format"
-                createArchive(outputPath, format)
+                val outputPath = "$currentPath/$fileName.$format"
+                archiver.createArchive(currentPath + "/test.txt", outputPath, format)
+                Toast.makeText(this, "Архив создан: $outputPath", Toast.LENGTH_SHORT).show()
             }
         }
         builder.setNegativeButton("Отмена", null)
@@ -117,13 +118,15 @@ class MainActivity : AppCompatActivity() {
         builder.setTitle("Распаковать архив")
         
         val view = layoutInflater.inflate(R.layout.dialog_extract_archive, null)
-        val archivePathEdit = view.findViewById<EditText>(R.id.archivePathEdit)
+        val outputPathEdit = view.findViewById<EditText>(R.id.outputPathEdit)
         
         builder.setView(view)
         builder.setPositiveButton("Распаковать") { dialog, _ ->
-            val archivePath = archivePathEdit.text.toString()
+            val archivePath = outputPathEdit.text.toString()
             if (archivePath.isNotEmpty()) {
-                extractArchive(archivePath, currentPath)
+                val outputDir = currentPath + "/extracted"
+                archiver.extractArchive(archivePath, outputDir)
+                Toast.makeText(this, "Распаковано в: $outputDir", Toast.LENGTH_SHORT).show()
             }
         }
         builder.setNegativeButton("Отмена", null)
@@ -139,7 +142,8 @@ class MainActivity : AppCompatActivity() {
                 0 -> compressFile(file)
                 1 -> {
                     val outputDir = file.parent + "/extracted"
-                    extractArchive(file.absolutePath, outputDir)
+                    archiver.extractArchive(file.absolutePath, outputDir)
+                    Toast.makeText(this, "Распаковано!", Toast.LENGTH_SHORT).show()
                 }
                 2 -> {
                     file.delete()
@@ -151,8 +155,8 @@ class MainActivity : AppCompatActivity() {
     }
     
     private fun compressFile(file: File) {
-        val formats = arrayOf("mashinist", "tep70bs", "tep")
         val extensions = arrayOf(".mashinist", ".tep70bs", ".tep")
+        val formats = arrayOf("mashinist", "tep70bs", "tep")
         
         val builder = android.app.AlertDialog.Builder(this)
         builder.setTitle("Выберите формат")
@@ -163,14 +167,5 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, "Архив создан: $outputPath", Toast.LENGTH_SHORT).show()
         }
         builder.show()
-    }
-    
-    private fun createArchive(outputPath: String, format: String) {
-        // Создаём пустой архив для демонстрации
-        Toast.makeText(this, "Функция в разработке", Toast.LENGTH_SHORT).show()
-    }
-    
-    private fun extractArchive(archivePath: String, outputDir: String) {
-        Toast.makeText(this, "Функция в разработке", Toast.LENGTH_SHORT).show()
     }
 }
