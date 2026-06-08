@@ -1,10 +1,8 @@
 package com.mashinist.archiver
 
 import android.Manifest
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
-import android.os.Environment
 import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
@@ -24,8 +22,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var createArchiveBtn: Button
     private lateinit var extractArchiveBtn: Button
     private lateinit var backBtn: Button
+    private lateinit var closeSelectionBtn: Button
     private lateinit var pathText: TextView
     private lateinit var confirmSelectionBtn: Button
+    private lateinit var buttonLayout: LinearLayout
     private lateinit var archiver: MashinistArchiver
     private lateinit var fileAdapter: FileAdapter
     
@@ -47,20 +47,27 @@ class MainActivity : AppCompatActivity() {
             createArchiveBtn = findViewById(R.id.createArchiveBtn)
             extractArchiveBtn = findViewById(R.id.extractArchiveBtn)
             backBtn = findViewById(R.id.backBtn)
+            closeSelectionBtn = findViewById(R.id.closeSelectionBtn)
             pathText = findViewById(R.id.pathText)
             confirmSelectionBtn = findViewById(R.id.confirmSelectionBtn)
+            buttonLayout = findViewById(R.id.buttonLayout)
             
             recyclerView.layoutManager = LinearLayoutManager(this)
             
+            // Кликабельный путь
+            pathText.setOnClickListener {
+                showPathNavigator()
+            }
+            
+            // Кнопка назад (только в режиме выбора)
             backBtn.setOnClickListener {
                 if (selectionMode) {
                     exitSelectionMode()
-                } else {
-                    val parentDir = File(currentPath).parentFile
-                    if (parentDir != null && parentDir.canRead()) {
-                        loadFiles(parentDir.absolutePath)
-                    }
                 }
+            }
+            
+            closeSelectionBtn.setOnClickListener {
+                exitSelectionMode()
             }
             
             createArchiveBtn.setOnClickListener {
@@ -73,6 +80,7 @@ class MainActivity : AppCompatActivity() {
             
             confirmSelectionBtn.setOnClickListener {
                 val selectedFiles = fileAdapter.getSelectedFiles()
+                logToFile("Confirm clicked. Selected files: ${selectedFiles.size}")
                 
                 if (selectedFiles.isEmpty()) {
                     Toast.makeText(this, "Не выбрано ни одного файла", Toast.LENGTH_SHORT).show()
@@ -92,7 +100,7 @@ class MainActivity : AppCompatActivity() {
                 }
             }
             
-            showPermissionDialog()
+            checkPermissions()
             
         } catch (e: Exception) {
             logToFile("CRASH: ${e.message}")
@@ -112,49 +120,37 @@ class MainActivity : AppCompatActivity() {
         } catch (e: Exception) {}
     }
     
-    private fun showPermissionDialog() {
-        val dialogView = layoutInflater.inflate(R.layout.dialog_permission, null)
+    private fun showPathNavigator() {
+        val pathParts = currentPath.split("/").filter { it.isNotEmpty() }
+        val displayParts = mutableListOf("/")
+        displayParts.addAll(pathParts)
+        
         val dialog = MaterialAlertDialogBuilder(this)
-            .setView(dialogView)
-            .setCancelable(false)
+            .setTitle("Перейти к папке")
+            .setItems(displayParts.toTypedArray()) { _, which ->
+                if (which == 0) {
+                    loadFiles("/storage/emulated/0")
+                } else {
+                    val newPath = "/" + pathParts.take(which).joinToString("/")
+                    loadFiles(newPath)
+                }
+            }
+            .setNegativeButton("Отмена", null)
             .create()
         
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
-        
-        dialogView.findViewById<Button>(R.id.continueBtn).setOnClickListener {
-            dialog.dismiss()
-            checkPermissions()
-        }
-        
         dialog.show()
     }
     
     private fun checkPermissions() {
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
-            if (!Environment.isExternalStorageManager()) {
-                startActivity(Intent(android.provider.Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION))
-            } else {
-                loadFiles(currentPath)
-            }
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
+            != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE, 
+                       Manifest.permission.WRITE_EXTERNAL_STORAGE),
+                STORAGE_PERMISSION_CODE)
         } else {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
-                != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(this,
-                    arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE, 
-                           Manifest.permission.WRITE_EXTERNAL_STORAGE),
-                    STORAGE_PERMISSION_CODE)
-            } else {
-                loadFiles(currentPath)
-            }
-        }
-    }
-    
-    override fun onResume() {
-        super.onResume()
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
-            if (Environment.isExternalStorageManager()) {
-                loadFiles(currentPath)
-            }
+            loadFiles(currentPath)
         }
     }
     
@@ -164,6 +160,7 @@ class MainActivity : AppCompatActivity() {
         if (requestCode == STORAGE_PERMISSION_CODE) {
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 loadFiles(currentPath)
+                Toast.makeText(this, "Разрешения получены", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -172,9 +169,9 @@ class MainActivity : AppCompatActivity() {
         selectionMode = true
         selectionType = type
         confirmSelectionBtn.visibility = View.VISIBLE
-        createArchiveBtn.visibility = View.GONE
-        extractArchiveBtn.visibility = View.GONE
-        backBtn.text = "← Отмена"
+        closeSelectionBtn.visibility = View.VISIBLE
+        backBtn.visibility = View.VISIBLE
+        buttonLayout.visibility = View.GONE
         Toast.makeText(this, "Выберите файлы и нажмите ✓", Toast.LENGTH_LONG).show()
         loadFiles(currentPath)
     }
@@ -183,19 +180,18 @@ class MainActivity : AppCompatActivity() {
         selectionMode = false
         selectionType = ""
         confirmSelectionBtn.visibility = View.GONE
-        createArchiveBtn.visibility = View.VISIBLE
-        extractArchiveBtn.visibility = View.VISIBLE
-        backBtn.text = "←"
+        closeSelectionBtn.visibility = View.GONE
+        backBtn.visibility = View.GONE
+        buttonLayout.visibility = View.VISIBLE
         loadFiles(currentPath)
     }
     
     private fun loadFiles(path: String) {
         try {
             val dir = File(path)
-            val files = dir.listFiles()?.toList()?.sortedWith(compareBy({ !it.isDirectory }, { it.name })) ?: emptyList()
+            val files = dir.listFiles()?.toList()?.sortedWith(compareBy({ !it.isDirectory }, { it.name.lowercase() })) ?: emptyList()
             currentPath = path
             pathText.text = path
-            backBtn.isEnabled = true
             
             fileAdapter = FileAdapter(files, selectionMode) { file ->
                 if (file.isDirectory) {
@@ -204,10 +200,10 @@ class MainActivity : AppCompatActivity() {
             }
             
             recyclerView.adapter = fileAdapter
+            logToFile("Files loaded: ${files.size}, selectionMode: $selectionMode")
             
         } catch (e: Exception) {
             logToFile("Error loading files: ${e.message}")
-            Toast.makeText(this, "Ошибка загрузки файлов", Toast.LENGTH_SHORT).show()
         }
     }
     
@@ -225,7 +221,7 @@ class MainActivity : AppCompatActivity() {
         val radioTep70bs = dialogView.findViewById<RadioButton>(R.id.radioTep70bs)
         val radioTep = dialogView.findViewById<RadioButton>(R.id.radioTep)
         
-        selectedFilesText.text = "Выбрано файлов/папок: ${files.size}"
+        selectedFilesText.text = "Выбрано файлов: ${files.size}"
         
         dialogView.findViewById<Button>(R.id.cancelBtn).setOnClickListener {
             dialog.dismiss()
