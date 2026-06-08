@@ -15,7 +15,9 @@ class FileAdapter(
     private val onFileClick: (File) -> Unit
 ) : RecyclerView.Adapter<FileAdapter.ViewHolder>() {
     
-    private val selectedFiles = mutableSetOf<File>()
+    companion object {
+        val selectedFiles = mutableSetOf<File>()
+    }
     
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val icon: ImageView = view.findViewById(R.id.fileIcon)
@@ -34,9 +36,9 @@ class FileAdapter(
         val file = files[position]
         holder.name.text = file.name
         
-        // Иконки в зависимости от типа файла
         if (file.isDirectory) {
             holder.icon.setImageResource(android.R.drawable.ic_dialog_info)
+            holder.checkBox.visibility = View.GONE
             val count = file.listFiles()?.size ?: 0
             holder.info.text = "Папка | $count элементов"
         } else {
@@ -50,39 +52,26 @@ class FileAdapter(
                     holder.icon.setImageResource(android.R.drawable.ic_menu_gallery)
                     holder.info.text = "Изображение | ${formatSize(file.length())}"
                 }
-                extension in listOf("mp4", "avi", "mkv", "mov", "flv") -> {
+                extension in listOf("mp4", "avi", "mkv", "mov") -> {
                     holder.icon.setImageResource(android.R.drawable.ic_media_play)
                     holder.info.text = "Видео | ${formatSize(file.length())}"
                 }
-                extension in listOf("mp3", "wav", "ogg", "flac", "aac") -> {
+                extension in listOf("mp3", "wav", "ogg", "flac") -> {
                     holder.icon.setImageResource(android.R.drawable.ic_media_play)
                     holder.info.text = "Аудио | ${formatSize(file.length())}"
-                }
-                extension in listOf("pdf", "doc", "docx", "txt", "xml", "json") -> {
-                    holder.icon.setImageResource(android.R.drawable.ic_menu_edit)
-                    holder.info.text = "Документ | ${formatSize(file.length())}"
-                }
-                extension in listOf("apk") -> {
-                    holder.icon.setImageResource(android.R.drawable.ic_menu_compass)
-                    holder.info.text = "APK | ${formatSize(file.length())}"
-                }
-                extension in listOf("zip", "rar", "7z", "tar", "gz") -> {
-                    holder.icon.setImageResource(android.R.drawable.ic_menu_save)
-                    holder.info.text = "Архив | ${formatSize(file.length())}"
                 }
                 else -> {
                     holder.icon.setImageResource(android.R.drawable.ic_menu_gallery)
                     holder.info.text = "Файл | ${formatSize(file.length())}"
                 }
             }
-        }
-        
-        // Чекбокс только для обычных файлов в режиме выбора
-        if (selectionMode && !file.isDirectory) {
-            holder.checkBox.visibility = View.VISIBLE
-            holder.checkBox.isChecked = selectedFiles.contains(file)
-        } else {
-            holder.checkBox.visibility = View.GONE
+            
+            if (selectionMode) {
+                holder.checkBox.visibility = View.VISIBLE
+                holder.checkBox.isChecked = selectedFiles.contains(file)
+            } else {
+                holder.checkBox.visibility = View.GONE
+            }
         }
         
         holder.itemView.setOnClickListener {
@@ -103,6 +92,10 @@ class FileAdapter(
     override fun getItemCount() = files.size
     
     fun getSelectedFiles(): List<File> = selectedFiles.toList()
+    
+    fun clearSelection() {
+        selectedFiles.clear()
+    }
     
     private fun formatSize(size: Long): String {
         return when {
