@@ -191,7 +191,9 @@ class MainActivity : AppCompatActivity() {
             val dir = File(path)
             val files = dir.listFiles()?.toList()?.sortedWith(compareBy({ !it.isDirectory }, { it.name.lowercase() })) ?: emptyList()
             currentPath = path; pathText.text = path
-            fileAdapter = FileAdapter(files, selectionMode) { if (it.isDirectory && !selectionMode) loadFiles(it.absolutePath) }
+            fileAdapter = FileAdapter(files, selectionMode, { f ->
+                if (f.isDirectory && !selectionMode) loadFiles(f.absolutePath)
+            }, null)
             recyclerView.adapter = fileAdapter
         } catch (e: Exception) { Toast.makeText(this, "Ошибка", Toast.LENGTH_SHORT).show() }
     }
@@ -202,7 +204,6 @@ class MainActivity : AppCompatActivity() {
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
         val nameEdit = view.findViewById<EditText>(R.id.archiveNameEdit)
         view.findViewById<TextView>(R.id.selectedFilesText).text = "Выбрано: ${files.size} шт."
-        val rM = view.findViewById<RadioButton>(R.id.radioMashinist)
         val r70 = view.findViewById<RadioButton>(R.id.radioTep70bs)
         val rT = view.findViewById<RadioButton>(R.id.radioTep)
         when (defaultFormat) { "tep70bs" -> r70.isChecked = true; "tep" -> rT.isChecked = true }
