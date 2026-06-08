@@ -12,6 +12,10 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import java.io.File
+import java.io.FileWriter
+import java.io.PrintWriter
+import java.text.SimpleDateFormat
+import java.util.*
 
 class MainActivity : AppCompatActivity() {
     
@@ -28,58 +32,92 @@ class MainActivity : AppCompatActivity() {
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
         
-        archiver = MashinistArchiver()
-        
-        recyclerView = findViewById(R.id.recyclerView)
-        createArchiveBtn = findViewById(R.id.createArchiveBtn)
-        extractArchiveBtn = findViewById(R.id.extractArchiveBtn)
-        backBtn = findViewById(R.id.backBtn)
-        pathText = findViewById(R.id.pathText)
-        
-        recyclerView.layoutManager = LinearLayoutManager(this)
-        
-        backBtn.setOnClickListener {
-            val parentDir = File(currentPath).parentFile
-            if (parentDir != null && parentDir.canRead()) {
-                loadFiles(parentDir.absolutePath)
+        try {
+            logToFile("App started")
+            setContentView(R.layout.activity_main)
+            logToFile("ContentView set")
+            
+            archiver = MashinistArchiver()
+            
+            recyclerView = findViewById(R.id.recyclerView)
+            createArchiveBtn = findViewById(R.id.createArchiveBtn)
+            extractArchiveBtn = findViewById(R.id.extractArchiveBtn)
+            backBtn = findViewById(R.id.backBtn)
+            pathText = findViewById(R.id.pathText)
+            
+            logToFile("Views initialized")
+            
+            recyclerView.layoutManager = LinearLayoutManager(this)
+            
+            backBtn.setOnClickListener {
+                val parentDir = File(currentPath).parentFile
+                if (parentDir != null && parentDir.canRead()) {
+                    loadFiles(parentDir.absolutePath)
+                }
             }
-        }
-        
-        createArchiveBtn.setOnClickListener {
-            if (selectedFiles.isEmpty()) {
-                Toast.makeText(this, "Выберите файлы для архивации", Toast.LENGTH_SHORT).show()
-            } else {
-                showCreateArchiveDialog()
+            
+            createArchiveBtn.setOnClickListener {
+                if (selectedFiles.isEmpty()) {
+                    Toast.makeText(this, "Выберите файлы для архивации", Toast.LENGTH_SHORT).show()
+                } else {
+                    showCreateArchiveDialog()
+                }
             }
+            
+            extractArchiveBtn.setOnClickListener {
+                showExtractArchiveDialog()
+            }
+            
+            logToFile("Showing permission dialog")
+            showPermissionDialog()
+            
+        } catch (e: Exception) {
+            logToFile("CRASH: ${e.message}")
+            logToFile("Stack trace: ${e.stackTraceToString()}")
+            Toast.makeText(this, "Ошибка: ${e.message}", Toast.LENGTH_LONG).show()
         }
-        
-        extractArchiveBtn.setOnClickListener {
-            showExtractArchiveDialog()
+    }
+    
+    private fun logToFile(message: String) {
+        try {
+            val logDir = File(getExternalFilesDir(null), "logs")
+            if (!logDir.exists()) logDir.mkdirs()
+            
+            val logFile = File(logDir, "app.log")
+            val timestamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
+            
+            FileWriter(logFile, true).use { writer ->
+                writer.append("[$timestamp] $message\n")
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
-        
-        showPermissionDialog()
     }
     
     private fun showPermissionDialog() {
-        val dialogView = layoutInflater.inflate(R.layout.dialog_permission, null)
-        
-        val dialog = MaterialAlertDialogBuilder(this)
-            .setView(dialogView)
-            .setCancelable(false)
-            .create()
-        
-        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
-        
-        val continueBtn = dialogView.findViewById<Button>(R.id.continueBtn)
-        
-        continueBtn.setOnClickListener {
-            dialog.dismiss()
-            checkPermissions()
+        try {
+            val dialogView = layoutInflater.inflate(R.layout.dialog_permission, null)
+            
+            val dialog = MaterialAlertDialogBuilder(this)
+                .setView(dialogView)
+                .setCancelable(false)
+                .create()
+            
+            dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+            
+            val continueBtn = dialogView.findViewById<Button>(R.id.continueBtn)
+            
+            continueBtn.setOnClickListener {
+                dialog.dismiss()
+                checkPermissions()
+            }
+            
+            dialog.show()
+            logToFile("Permission dialog shown")
+        } catch (e: Exception) {
+            logToFile("Error showing permission dialog: ${e.message}")
         }
-        
-        dialog.show()
     }
     
     private fun checkPermissions() {
@@ -123,25 +161,31 @@ class MainActivity : AppCompatActivity() {
     }
     
     private fun loadFiles(path: String) {
-        val dir = File(path)
-        val files = dir.listFiles()?.toList() ?: emptyList()
-        currentPath = path
-        pathText.text = path
-        
-        backBtn.isEnabled = File(path).parentFile != null
-        
-        recyclerView.adapter = FileAdapter(files) { file ->
-            if (file.isDirectory) {
-                loadFiles(file.absolutePath)
-            } else {
-                if (selectedFiles.contains(file)) {
-                    selectedFiles.remove(file)
-                    Toast.makeText(this, "Убран: ${file.name}", Toast.LENGTH_SHORT).show()
+        try {
+            logToFile("Loading files from: $path")
+            val dir = File(path)
+            val files = dir.listFiles()?.toList() ?: emptyList()
+            currentPath = path
+            pathText.text = path
+            
+            backBtn.isEnabled = File(path).parentFile != null
+            
+            recyclerView.adapter = FileAdapter(files) { file ->
+                if (file.isDirectory) {
+                    loadFiles(file.absolutePath)
                 } else {
-                    selectedFiles.add(file)
-                    Toast.makeText(this, "Выбран: ${file.name}", Toast.LENGTH_SHORT).show()
+                    if (selectedFiles.contains(file)) {
+                        selectedFiles.remove(file)
+                        Toast.makeText(this, "Убран: ${file.name}", Toast.LENGTH_SHORT).show()
+                    } else {
+                        selectedFiles.add(file)
+                        Toast.makeText(this, "Выбран: ${file.name}", Toast.LENGTH_SHORT).show()
+                    }
                 }
             }
+            logToFile("Files loaded: ${files.size}")
+        } catch (e: Exception) {
+            logToFile("Error loading files: ${e.message}")
         }
     }
     
@@ -185,15 +229,17 @@ class MainActivity : AppCompatActivity() {
             val outputPath = "$currentPath/$fileName.$format"
             
             try {
-                // Создаём архив из первого выбранного файла (для теста)
                 if (selectedFiles.isNotEmpty()) {
+                    logToFile("Creating archive: $outputPath")
                     archiver.createArchive(selectedFiles[0].absolutePath, outputPath, format)
+                    logToFile("Archive created successfully")
                     Toast.makeText(this, "Архив создан: $outputPath", Toast.LENGTH_SHORT).show()
                     selectedFiles.clear()
                     loadFiles(currentPath)
                     dialog.dismiss()
                 }
             } catch (e: Exception) {
+                logToFile("Error creating archive: ${e.message}")
                 Toast.makeText(this, "Ошибка: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }
@@ -223,11 +269,14 @@ class MainActivity : AppCompatActivity() {
             if (archivePath.isNotEmpty()) {
                 try {
                     val outputDir = currentPath + "/extracted"
+                    logToFile("Extracting archive: $archivePath")
                     archiver.extractArchive(archivePath, outputDir)
+                    logToFile("Archive extracted successfully")
                     Toast.makeText(this, "Распаковано в: $outputDir", Toast.LENGTH_SHORT).show()
                     loadFiles(currentPath)
                     dialog.dismiss()
                 } catch (e: Exception) {
+                    logToFile("Error extracting archive: ${e.message}")
                     Toast.makeText(this, "Ошибка: ${e.message}", Toast.LENGTH_LONG).show()
                 }
             }
