@@ -129,44 +129,44 @@ class MainActivity : AppCompatActivity() {
     }
     
     private fun showSettingsDialog() {
-        val dialogView = layoutInflater.inflate(R.layout.dialog_settings, null)
-        val dialog = MaterialAlertDialogBuilder(this).setView(dialogView).create()
+        val view = layoutInflater.inflate(R.layout.dialog_settings, null)
+        val dialog = MaterialAlertDialogBuilder(this).setView(view).create()
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
         
-        val defaultExtractPathEdit = dialogView.findViewById<EditText>(R.id.defaultExtractPathEdit)
+        val defaultExtractPathEdit = view.findViewById<EditText>(R.id.defaultExtractPathEdit)
+        val radioDefaultTep70bs = view.findViewById<RadioButton>(R.id.radioDefaultTep70bs)
+        val radioDefaultTep = view.findViewById<RadioButton>(R.id.radioDefaultTep)
         
         when (defaultFormat) {
-            "tep70bs" -> dialogView.findViewById<RadioButton>(R.id.radioDefaultTep70bs).isChecked = true
-            "tep" -> dialogView.findViewById<RadioButton>(R.id.radioDefaultTep).isChecked = true
+            "tep70bs" -> radioDefaultTep70bs.isChecked = true
+            "tep" -> radioDefaultTep.isChecked = true
         }
         defaultExtractPathEdit.setText(defaultExtractPath)
         
-        dialogView.findViewById<Button>(R.id.saveSettingsBtn).setOnClickListener {
+        view.findViewById<Button>(R.id.saveSettingsBtn).setOnClickListener {
             val format = when {
-                dialogView.findViewById<RadioButton>(R.id.radioDefaultTep70bs).isChecked -> "tep70bs"
-                dialogView.findViewById<RadioButton>(R.id.radioDefaultTep).isChecked -> "tep"
+                radioDefaultTep70bs.isChecked -> "tep70bs"
+                radioDefaultTep.isChecked -> "tep"
                 else -> "mashinist"
             }
-            val extractPath = defaultExtractPathEdit.text.toString()
-            saveSettings(format, extractPath)
-            Toast.makeText(this, "Настройки сохранены", Toast.LENGTH_SHORT).show()
+            saveSettings(format, defaultExtractPathEdit.text.toString())
+            Toast.makeText(this, "Сохранено", Toast.LENGTH_SHORT).show()
             dialog.dismiss()
         }
         
-        dialogView.findViewById<Button>(R.id.closeSettingsBtn).setOnClickListener { dialog.dismiss() }
+        view.findViewById<Button>(R.id.closeSettingsBtn).setOnClickListener { dialog.dismiss() }
         dialog.show()
     }
     
     private fun showAboutDialog() {
-        val dialogView = layoutInflater.inflate(R.layout.dialog_about, null)
-        val dialog = MaterialAlertDialogBuilder(this).setView(dialogView).create()
+        val view = layoutInflater.inflate(R.layout.dialog_about, null)
+        val dialog = MaterialAlertDialogBuilder(this).setView(view).create()
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
         
-        dialogView.findViewById<Button>(R.id.githubBtn).setOnClickListener {
+        view.findViewById<Button>(R.id.githubBtn).setOnClickListener {
             startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/mashinistTEP/mashinist-archiver")))
         }
-        
-        dialogView.findViewById<Button>(R.id.closeAboutBtn).setOnClickListener { dialog.dismiss() }
+        view.findViewById<Button>(R.id.closeAboutBtn).setOnClickListener { dialog.dismiss() }
         dialog.show()
     }
     
@@ -179,11 +179,11 @@ class MainActivity : AppCompatActivity() {
     }
     
     private fun showPermissionWarningDialog() {
-        val dialogView = layoutInflater.inflate(R.layout.dialog_permission, null)
-        val dialog = MaterialAlertDialogBuilder(this).setView(dialogView).setCancelable(false).create()
+        val view = layoutInflater.inflate(R.layout.dialog_permission, null)
+        val dialog = MaterialAlertDialogBuilder(this).setView(view).setCancelable(false).create()
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
         
-        dialogView.findViewById<Button>(R.id.continueBtn).setOnClickListener {
+        view.findViewById<Button>(R.id.continueBtn).setOnClickListener {
             dialog.dismiss()
             requestPermissions()
         }
@@ -216,24 +216,22 @@ class MainActivity : AppCompatActivity() {
     
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == STORAGE_PERMISSION_CODE) {
-            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                loadFiles(currentPath)
-                Toast.makeText(this, "Готово к работе!", Toast.LENGTH_SHORT).show()
-            }
+        if (requestCode == STORAGE_PERMISSION_CODE && grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            loadFiles(currentPath)
+            Toast.makeText(this, "Готово к работе!", Toast.LENGTH_SHORT).show()
         }
     }
     
     private fun showPathNavigator() {
-        val pathParts = currentPath.split("/").filter { it.isNotEmpty() }
-        val displayParts = mutableListOf("/")
-        displayParts.addAll(pathParts)
+        val parts = currentPath.split("/").filter { it.isNotEmpty() }
+        val items = mutableListOf("/")
+        items.addAll(parts)
         
         MaterialAlertDialogBuilder(this)
             .setTitle("Перейти к папке")
-            .setItems(displayParts.toTypedArray()) { _, which ->
+            .setItems(items.toTypedArray()) { _, which ->
                 if (which == 0) loadFiles("/storage/emulated/0")
-                else loadFiles("/" + pathParts.take(which).joinToString("/"))
+                else loadFiles("/" + parts.take(which).joinToString("/"))
             }
             .setNegativeButton("Отмена", null)
             .show()
@@ -269,9 +267,9 @@ class MainActivity : AppCompatActivity() {
             currentPath = path
             pathText.text = path
             
-            fileAdapter = FileAdapter(files, selectionMode) { file ->
+            fileAdapter = FileAdapter(files, selectionMode, { file ->
                 if (file.isDirectory && !selectionMode) loadFiles(file.absolutePath)
-            }
+            })
             recyclerView.adapter = fileAdapter
         } catch (e: Exception) {
             Toast.makeText(this, "Ошибка: ${e.message}", Toast.LENGTH_SHORT).show()
@@ -279,15 +277,15 @@ class MainActivity : AppCompatActivity() {
     }
     
     private fun showCreateArchiveDialogWithFiles(files: List<File>) {
-        val dialogView = layoutInflater.inflate(R.layout.dialog_create_archive, null)
-        val dialog = MaterialAlertDialogBuilder(this).setView(dialogView).create()
+        val view = layoutInflater.inflate(R.layout.dialog_create_archive, null)
+        val dialog = MaterialAlertDialogBuilder(this).setView(view).create()
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
         
-        val archiveNameEdit = dialogView.findViewById<EditText>(R.id.archiveNameEdit)
-        val selectedFilesText = dialogView.findViewById<TextView>(R.id.selectedFilesText)
-        val radioMashinist = dialogView.findViewById<RadioButton>(R.id.radioMashinist)
-        val radioTep70bs = dialogView.findViewById<RadioButton>(R.id.radioTep70bs)
-        val radioTep = dialogView.findViewById<RadioButton>(R.id.radioTep)
+        val archiveNameEdit = view.findViewById<EditText>(R.id.archiveNameEdit)
+        val selectedFilesText = view.findViewById<TextView>(R.id.selectedFilesText)
+        val radioMashinist = view.findViewById<RadioButton>(R.id.radioMashinist)
+        val radioTep70bs = view.findViewById<RadioButton>(R.id.radioTep70bs)
+        val radioTep = view.findViewById<RadioButton>(R.id.radioTep)
         
         when (defaultFormat) {
             "tep70bs" -> radioTep70bs.isChecked = true
@@ -296,12 +294,12 @@ class MainActivity : AppCompatActivity() {
         
         selectedFilesText.text = "Выбрано: ${files.size} шт."
         
-        dialogView.findViewById<Button>(R.id.cancelBtn).setOnClickListener {
+        view.findViewById<Button>(R.id.cancelBtn).setOnClickListener {
             FileAdapter.selectedFiles.clear()
             dialog.dismiss()
         }
         
-        dialogView.findViewById<Button>(R.id.createBtn).setOnClickListener {
+        view.findViewById<Button>(R.id.createBtn).setOnClickListener {
             val fileName = archiveNameEdit.text.toString()
             if (fileName.isEmpty()) {
                 Toast.makeText(this, "Введите имя архива", Toast.LENGTH_SHORT).show()
@@ -326,23 +324,22 @@ class MainActivity : AppCompatActivity() {
     }
     
     private fun showExtractArchiveDialogWithFile(archiveFile: File) {
-        val dialogView = layoutInflater.inflate(R.layout.dialog_extract_archive, null)
-        val dialog = MaterialAlertDialogBuilder(this).setView(dialogView).create()
+        val view = layoutInflater.inflate(R.layout.dialog_extract_archive, null)
+        val dialog = MaterialAlertDialogBuilder(this).setView(view).create()
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
         
-        val selectedArchiveText = dialogView.findViewById<TextView>(R.id.selectedArchiveText)
-        val outputPathEdit = dialogView.findViewById<EditText>(R.id.outputPathEdit)
+        val selectedArchiveText = view.findViewById<TextView>(R.id.selectedArchiveText)
+        val outputPathEdit = view.findViewById<EditText>(R.id.outputPathEdit)
         
-        val archiveName = archiveFile.nameWithoutExtension
         selectedArchiveText.text = "Архив: ${archiveFile.name}"
-        outputPathEdit.setText("$currentPath/$archiveName")
+        outputPathEdit.setText("$currentPath/${archiveFile.nameWithoutExtension}")
         
-        dialogView.findViewById<Button>(R.id.cancelExtractBtn).setOnClickListener {
+        view.findViewById<Button>(R.id.cancelExtractBtn).setOnClickListener {
             FileAdapter.selectedFiles.clear()
             dialog.dismiss()
         }
         
-        dialogView.findViewById<Button>(R.id.extractBtn).setOnClickListener {
+        view.findViewById<Button>(R.id.extractBtn).setOnClickListener {
             val outputDir = outputPathEdit.text.toString()
             if (outputDir.isEmpty()) {
                 Toast.makeText(this, "Укажите путь распаковки", Toast.LENGTH_SHORT).show()

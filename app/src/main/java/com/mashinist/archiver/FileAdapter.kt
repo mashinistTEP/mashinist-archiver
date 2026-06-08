@@ -12,7 +12,8 @@ import java.io.File
 class FileAdapter(
     private val files: List<File>,
     private val selectionMode: Boolean,
-    private val onFileClick: (File) -> Unit
+    private val onFileClick: (File) -> Unit,
+    private val onFileLongClick: ((File) -> Unit)? = null
 ) : RecyclerView.Adapter<FileAdapter.ViewHolder>() {
     
     companion object {
@@ -41,12 +42,10 @@ class FileAdapter(
             val count = file.listFiles()?.size ?: 0
             holder.info.text = "Папка | $count элементов"
             
-            // Теперь папки тоже можно выбирать
             if (selectionMode) {
                 holder.checkBox.visibility = View.VISIBLE
                 holder.checkBox.isChecked = selectedFiles.contains(file)
                 holder.checkBox.isClickable = false
-                holder.checkBox.isFocusable = false
             } else {
                 holder.checkBox.visibility = View.GONE
             }
@@ -79,25 +78,36 @@ class FileAdapter(
                 holder.checkBox.visibility = View.VISIBLE
                 holder.checkBox.isChecked = selectedFiles.contains(file)
                 holder.checkBox.isClickable = false
-                holder.checkBox.isFocusable = false
             } else {
                 holder.checkBox.visibility = View.GONE
             }
         }
         
-        // Нажатие на всю область
+        // Обычное нажатие
         holder.itemView.setOnClickListener {
             if (file.isDirectory && !selectionMode) {
                 onFileClick(file)
             } else if (selectionMode) {
-                if (selectedFiles.contains(file)) {
-                    selectedFiles.remove(file)
-                    holder.checkBox.isChecked = false
-                } else {
-                    selectedFiles.add(file)
-                    holder.checkBox.isChecked = true
-                }
+                toggleSelection(file, holder)
             }
+        }
+        
+        // Длинное нажатие для папок в режиме выбора
+        if (file.isDirectory && selectionMode) {
+            holder.itemView.setOnLongClickListener {
+                toggleSelection(file, holder)
+                true
+            }
+        }
+    }
+    
+    private fun toggleSelection(file: File, holder: ViewHolder) {
+        if (selectedFiles.contains(file)) {
+            selectedFiles.remove(file)
+            holder.checkBox.isChecked = false
+        } else {
+            selectedFiles.add(file)
+            holder.checkBox.isChecked = true
         }
     }
     
