@@ -30,8 +30,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var fileAdapter: FileAdapter
     
     private var currentPath = "/storage/emulated/0"
-    private var selectionMode = false // false - обычный режим, true - режим выбора
-    private var selectionType = "" // "create" или "extract"
+    private var selectionMode = false
+    private var selectionType = ""
     private val STORAGE_PERMISSION_CODE = 100
     
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -64,15 +64,32 @@ class MainActivity : AppCompatActivity() {
             }
             
             createArchiveBtn.setOnClickListener {
-                showCreateArchiveDialog()
+                enterSelectionMode("create")
             }
             
             extractArchiveBtn.setOnClickListener {
-                showExtractArchiveDialog()
+                enterSelectionMode("extract")
             }
             
             confirmSelectionBtn.setOnClickListener {
-                confirmSelection()
+                val selectedFiles = fileAdapter.getSelectedFiles()
+                
+                if (selectedFiles.isEmpty()) {
+                    Toast.makeText(this, "Не выбрано ни одного файла", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+                
+                when (selectionType) {
+                    "create" -> {
+                        exitSelectionMode()
+                        showCreateArchiveDialogWithFiles(selectedFiles)
+                    }
+                    "extract" -> {
+                        val archiveFile = selectedFiles.first()
+                        exitSelectionMode()
+                        showExtractArchiveDialogWithFile(archiveFile)
+                    }
+                }
             }
             
             showPermissionDialog()
@@ -92,9 +109,7 @@ class MainActivity : AppCompatActivity() {
             FileWriter(logFile, true).use { writer ->
                 writer.append("[$timestamp] $message\n")
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
+        } catch (e: Exception) {}
     }
     
     private fun showPermissionDialog() {
@@ -161,6 +176,7 @@ class MainActivity : AppCompatActivity() {
         extractArchiveBtn.visibility = View.GONE
         backBtn.text = "← Отмена"
         Toast.makeText(this, "Выберите файлы и нажмите ✓", Toast.LENGTH_LONG).show()
+        loadFiles(currentPath)
     }
     
     private fun exitSelectionMode() {
@@ -173,39 +189,16 @@ class MainActivity : AppCompatActivity() {
         loadFiles(currentPath)
     }
     
-    private fun confirmSelection() {
-        val selectedFiles = fileAdapter.getSelectedFiles()
-        
-        if (selectedFiles.isEmpty()) {
-            Toast.makeText(this, "Не выбрано ни одного файла", Toast.LENGTH_SHORT).show()
-            return
-        }
-        
-        when (selectionType) {
-            "create" -> {
-                exitSelectionMode()
-                showCreateArchiveDialogWithFiles(selectedFiles)
-            }
-            "extract" -> {
-                // Для распаковки нужен только один архив
-                val archiveFile = selectedFiles.first()
-                exitSelectionMode()
-                showExtractArchiveDialogWithFile(archiveFile)
-            }
-        }
-    }
-    
     private fun loadFiles(path: String) {
         try {
             val dir = File(path)
-            val files = dir.listFiles()?.toList() ?: emptyList()
+            val files = dir.listFiles()?.toList()?.sortedWith(compareBy({ !it.isDirectory }, { it.name })) ?: emptyList()
             currentPath = path
             pathText.text = path
-            
             backBtn.isEnabled = true
             
             fileAdapter = FileAdapter(files, selectionMode) { file ->
-                if (file.isDirectory && !selectionMode) {
+                if (file.isDirectory) {
                     loadFiles(file.absolutePath)
                 }
             }
@@ -216,10 +209,6 @@ class MainActivity : AppCompatActivity() {
             logToFile("Error loading files: ${e.message}")
             Toast.makeText(this, "Ошибка загрузки файлов", Toast.LENGTH_SHORT).show()
         }
-    }
-    
-    private fun showCreateArchiveDialog() {
-        enterSelectionMode("create")
     }
     
     private fun showCreateArchiveDialogWithFiles(files: List<File>) {
@@ -236,7 +225,7 @@ class MainActivity : AppCompatActivity() {
         val radioTep70bs = dialogView.findViewById<RadioButton>(R.id.radioTep70bs)
         val radioTep = dialogView.findViewById<RadioButton>(R.id.radioTep)
         
-        selectedFilesText.text = "Выбрано файлов: ${files.size}"
+        selectedFilesText.text = "Выбрано файлов/папок: ${files.size}"
         
         dialogView.findViewById<Button>(R.id.cancelBtn).setOnClickListener {
             dialog.dismiss()
@@ -269,10 +258,6 @@ class MainActivity : AppCompatActivity() {
         }
         
         dialog.show()
-    }
-    
-    private fun showExtractArchiveDialog() {
-        enterSelectionMode("extract")
     }
     
     private fun showExtractArchiveDialogWithFile(archiveFile: File) {

@@ -34,23 +34,39 @@ class FileAdapter(
         val file = files[position]
         holder.name.text = file.name
         
-        if (selectionMode) {
-            holder.checkBox.visibility = View.VISIBLE
-        } else {
-            holder.checkBox.visibility = View.GONE
-        }
-        
+        // Иконки в зависимости от типа файла
         if (file.isDirectory) {
             holder.icon.setImageResource(android.R.drawable.ic_dialog_info)
-            holder.checkBox.visibility = View.GONE
             val count = file.listFiles()?.size ?: 0
             holder.info.text = "Папка | $count элементов"
         } else {
-            holder.checkBox.isChecked = selectedFiles.contains(file)
-            
-            val extension = file.extension
-            when (extension) {
-                "mashinist", "tep70bs", "tep" -> {
+            val extension = file.extension.lowercase()
+            when {
+                extension in listOf("mashinist", "tep70bs", "tep") -> {
+                    holder.icon.setImageResource(android.R.drawable.ic_menu_save)
+                    holder.info.text = "Архив | ${formatSize(file.length())}"
+                }
+                extension in listOf("jpg", "jpeg", "png", "gif", "bmp", "webp") -> {
+                    holder.icon.setImageResource(android.R.drawable.ic_menu_gallery)
+                    holder.info.text = "Изображение | ${formatSize(file.length())}"
+                }
+                extension in listOf("mp4", "avi", "mkv", "mov", "flv") -> {
+                    holder.icon.setImageResource(android.R.drawable.ic_media_play)
+                    holder.info.text = "Видео | ${formatSize(file.length())}"
+                }
+                extension in listOf("mp3", "wav", "ogg", "flac", "aac") -> {
+                    holder.icon.setImageResource(android.R.drawable.ic_media_play)
+                    holder.info.text = "Аудио | ${formatSize(file.length())}"
+                }
+                extension in listOf("pdf", "doc", "docx", "txt", "xml", "json") -> {
+                    holder.icon.setImageResource(android.R.drawable.ic_menu_edit)
+                    holder.info.text = "Документ | ${formatSize(file.length())}"
+                }
+                extension in listOf("apk") -> {
+                    holder.icon.setImageResource(android.R.drawable.ic_menu_compass)
+                    holder.info.text = "APK | ${formatSize(file.length())}"
+                }
+                extension in listOf("zip", "rar", "7z", "tar", "gz") -> {
                     holder.icon.setImageResource(android.R.drawable.ic_menu_save)
                     holder.info.text = "Архив | ${formatSize(file.length())}"
                 }
@@ -61,16 +77,25 @@ class FileAdapter(
             }
         }
         
+        // Чекбокс только для обычных файлов в режиме выбора
+        if (selectionMode && !file.isDirectory) {
+            holder.checkBox.visibility = View.VISIBLE
+            holder.checkBox.isChecked = selectedFiles.contains(file)
+        } else {
+            holder.checkBox.visibility = View.GONE
+        }
+        
         holder.itemView.setOnClickListener {
             if (file.isDirectory) {
                 onFileClick(file)
             } else if (selectionMode) {
                 if (selectedFiles.contains(file)) {
                     selectedFiles.remove(file)
+                    holder.checkBox.isChecked = false
                 } else {
                     selectedFiles.add(file)
+                    holder.checkBox.isChecked = true
                 }
-                holder.checkBox.isChecked = selectedFiles.contains(file)
             }
         }
     }
@@ -83,7 +108,8 @@ class FileAdapter(
         return when {
             size < 1024 -> "$size B"
             size < 1024 * 1024 -> "${size / 1024} KB"
-            else -> "${size / (1024 * 1024)} MB"
+            size < 1024 * 1024 * 1024 -> "${"%.1f".format(size / (1024.0 * 1024.0))} MB"
+            else -> "${"%.2f".format(size / (1024.0 * 1024.0 * 1024.0))} GB"
         }
     }
 }
