@@ -18,6 +18,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var recyclerView: RecyclerView
     private lateinit var createArchiveBtn: Button
     private lateinit var extractArchiveBtn: Button
+    private lateinit var backBtn: Button
     private lateinit var pathText: TextView
     private lateinit var archiver: MashinistArchiver
     
@@ -33,9 +34,17 @@ class MainActivity : AppCompatActivity() {
         recyclerView = findViewById(R.id.recyclerView)
         createArchiveBtn = findViewById(R.id.createArchiveBtn)
         extractArchiveBtn = findViewById(R.id.extractArchiveBtn)
+        backBtn = findViewById(R.id.backBtn)
         pathText = findViewById(R.id.pathText)
         
         recyclerView.layoutManager = LinearLayoutManager(this)
+        
+        backBtn.setOnClickListener {
+            val parentDir = File(currentPath).parentFile
+            if (parentDir != null && parentDir.canRead()) {
+                loadFiles(parentDir.absolutePath)
+            }
+        }
         
         createArchiveBtn.setOnClickListener {
             showCreateArchiveDialog()
@@ -113,6 +122,8 @@ class MainActivity : AppCompatActivity() {
         val files = dir.listFiles()?.toList() ?: emptyList()
         currentPath = path
         pathText.text = path
+        
+        backBtn.isEnabled = File(path).parentFile != null
         
         recyclerView.adapter = FileAdapter(files) { file ->
             if (file.isDirectory) {
