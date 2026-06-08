@@ -23,6 +23,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var archiver: MashinistArchiver
     
     private var currentPath = "/storage/emulated/0"
+    private var selectedFiles = mutableListOf<File>()
     private val STORAGE_PERMISSION_CODE = 100
     
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -47,7 +48,11 @@ class MainActivity : AppCompatActivity() {
         }
         
         createArchiveBtn.setOnClickListener {
-            showCreateArchiveDialog()
+            if (selectedFiles.isEmpty()) {
+                Toast.makeText(this, "Выберите файлы для архивации", Toast.LENGTH_SHORT).show()
+            } else {
+                showCreateArchiveDialog()
+            }
         }
         
         extractArchiveBtn.setOnClickListener {
@@ -128,6 +133,14 @@ class MainActivity : AppCompatActivity() {
         recyclerView.adapter = FileAdapter(files) { file ->
             if (file.isDirectory) {
                 loadFiles(file.absolutePath)
+            } else {
+                if (selectedFiles.contains(file)) {
+                    selectedFiles.remove(file)
+                    Toast.makeText(this, "Убран: ${file.name}", Toast.LENGTH_SHORT).show()
+                } else {
+                    selectedFiles.add(file)
+                    Toast.makeText(this, "Выбран: ${file.name}", Toast.LENGTH_SHORT).show()
+                }
             }
         }
     }
@@ -142,11 +155,14 @@ class MainActivity : AppCompatActivity() {
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
         
         val archiveNameEdit = dialogView.findViewById<EditText>(R.id.archiveNameEdit)
+        val selectedFilesText = dialogView.findViewById<TextView>(R.id.selectedFilesText)
         val radioMashinist = dialogView.findViewById<RadioButton>(R.id.radioMashinist)
         val radioTep70bs = dialogView.findViewById<RadioButton>(R.id.radioTep70bs)
         val radioTep = dialogView.findViewById<RadioButton>(R.id.radioTep)
         val cancelBtn = dialogView.findViewById<Button>(R.id.cancelBtn)
         val createBtn = dialogView.findViewById<Button>(R.id.createBtn)
+        
+        selectedFilesText.text = "Выбрано файлов: ${selectedFiles.size}"
         
         cancelBtn.setOnClickListener {
             dialog.dismiss()
@@ -154,17 +170,31 @@ class MainActivity : AppCompatActivity() {
         
         createBtn.setOnClickListener {
             val fileName = archiveNameEdit.text.toString()
+            
+            if (fileName.isEmpty()) {
+                Toast.makeText(this, "Введите имя архива", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            
             val format = when {
                 radioTep70bs.isChecked -> "tep70bs"
                 radioTep.isChecked -> "tep"
                 else -> "mashinist"
             }
             
-            if (fileName.isNotEmpty()) {
-                val outputPath = "$currentPath/$fileName.$format"
-                archiver.createArchive(currentPath + "/test.txt", outputPath, format)
-                Toast.makeText(this, "Архив создан: $outputPath", Toast.LENGTH_SHORT).show()
-                dialog.dismiss()
+            val outputPath = "$currentPath/$fileName.$format"
+            
+            try {
+                // Создаём архив из первого выбранного файла (для теста)
+                if (selectedFiles.isNotEmpty()) {
+                    archiver.createArchive(selectedFiles[0].absolutePath, outputPath, format)
+                    Toast.makeText(this, "Архив создан: $outputPath", Toast.LENGTH_SHORT).show()
+                    selectedFiles.clear()
+                    loadFiles(currentPath)
+                    dialog.dismiss()
+                }
+            } catch (e: Exception) {
+                Toast.makeText(this, "Ошибка: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }
         
@@ -191,10 +221,15 @@ class MainActivity : AppCompatActivity() {
         extractBtn.setOnClickListener {
             val archivePath = outputPathEdit.text.toString()
             if (archivePath.isNotEmpty()) {
-                val outputDir = currentPath + "/extracted"
-                archiver.extractArchive(archivePath, outputDir)
-                Toast.makeText(this, "Распаковано в: $outputDir", Toast.LENGTH_SHORT).show()
-                dialog.dismiss()
+                try {
+                    val outputDir = currentPath + "/extracted"
+                    archiver.extractArchive(archivePath, outputDir)
+                    Toast.makeText(this, "Распаковано в: $outputDir", Toast.LENGTH_SHORT).show()
+                    loadFiles(currentPath)
+                    dialog.dismiss()
+                } catch (e: Exception) {
+                    Toast.makeText(this, "Ошибка: ${e.message}", Toast.LENGTH_LONG).show()
+                }
             }
         }
         
