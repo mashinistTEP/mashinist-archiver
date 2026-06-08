@@ -1,8 +1,13 @@
 package com.mashinist.archiver
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.os.Environment
+import android.provider.Settings
 import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
@@ -12,9 +17,6 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import java.io.File
-import java.io.FileWriter
-import java.text.SimpleDateFormat
-import java.util.*
 
 class MainActivity : AppCompatActivity() {
     
@@ -33,6 +35,7 @@ class MainActivity : AppCompatActivity() {
     private var selectionMode = false
     private var selectionType = ""
     private val STORAGE_PERMISSION_CODE = 100
+    private val MANAGE_STORAGE_CODE = 200
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -54,7 +57,6 @@ class MainActivity : AppCompatActivity() {
         pathText.setOnClickListener { showPathNavigator() }
         backBtn.setOnClickListener { if (selectionMode) exitSelectionMode() }
         closeSelectionBtn.setOnClickListener { exitSelectionMode() }
-        
         createArchiveBtn.setOnClickListener { enterSelectionMode("create") }
         extractArchiveBtn.setOnClickListener { enterSelectionMode("extract") }
         
@@ -76,7 +78,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
         
-        // Показываем диалог с предупреждением
         showPermissionWarningDialog()
     }
     
@@ -91,14 +92,43 @@ class MainActivity : AppCompatActivity() {
         
         dialogView.findViewById<Button>(R.id.continueBtn).setOnClickListener {
             dialog.dismiss()
-            // После нажатия "Продолжить" запрашиваем системное разрешение
+            requestPermissions()
+        }
+        
+        dialog.show()
+    }
+    
+    private fun requestPermissions() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            // Android 11+
+            if (!Environment.isExternalStorageManager()) {
+                val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
+                intent.data = Uri.parse("package:com.mashinist.archiver")
+                startActivityForResult(intent, MANAGE_STORAGE_CODE)
+            } else {
+                loadFiles(currentPath)
+            }
+        } else {
+            // Android 10 и ниже
             ActivityCompat.requestPermissions(this,
                 arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE, 
                        Manifest.permission.WRITE_EXTERNAL_STORAGE),
                 STORAGE_PERMISSION_CODE)
         }
-        
-        dialog.show()
+    }
+    
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == MANAGE_STORAGE_CODE) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                if (Environment.isExternalStorageManager()) {
+                    loadFiles(currentPath)
+                    Toast.makeText(this, "Разрешение получено!", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this, "Разрешение не получено", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
     }
     
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, 
@@ -109,9 +139,7 @@ class MainActivity : AppCompatActivity() {
                 loadFiles(currentPath)
                 Toast.makeText(this, "Готово к работе!", Toast.LENGTH_SHORT).show()
             } else {
-                // Если не дал разрешение, показываем диалог снова
                 Toast.makeText(this, "Нужны разрешения для работы", Toast.LENGTH_LONG).show()
-                showPermissionWarningDialog()
             }
         }
     }
