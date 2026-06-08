@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:background="#2D004D">
+    
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Разрешения"
+        android:textColor="#FFFFFF"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="16dp"/>
+    
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Для работы с файлами понадобятся следующие разрешения. На следующих окнах нажмите \"Разрешить\""
+        android:textColor="#CE93D8"
+        android:textSize="14sp"
+        android:layout_marginBottom="24dp"/>
+    
+    <Button
+        android:id="@+id/continueBtn"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:text="Продолжить"
+        android:textColor="#FFFFFF"
+        android:backgroundTint="#9C27B0"/>
+    
+</LinearLayout>

@@ -4,7 +4,6 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.os.Environment
-import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -46,7 +45,27 @@ class MainActivity : AppCompatActivity() {
             showExtractArchiveDialog()
         }
         
-        checkPermissions()
+        showPermissionDialog()
+    }
+    
+    private fun showPermissionDialog() {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_permission, null)
+        
+        val dialog = MaterialAlertDialogBuilder(this)
+            .setView(dialogView)
+            .setCancelable(false)
+            .create()
+        
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        
+        val continueBtn = dialogView.findViewById<Button>(R.id.continueBtn)
+        
+        continueBtn.setOnClickListener {
+            dialog.dismiss()
+            checkPermissions()
+        }
+        
+        dialog.show()
     }
     
     private fun checkPermissions() {
