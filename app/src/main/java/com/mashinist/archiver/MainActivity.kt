@@ -12,6 +12,7 @@ import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -75,7 +76,6 @@ class MainActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
             
-            // Сохраняем выбранные файлы перед выходом из режима
             val filesToProcess = selectedFiles.toList()
             
             when (selectionType) {
@@ -90,7 +90,20 @@ class MainActivity : AppCompatActivity() {
             }
         }
         
-        showPermissionWarningDialog()
+        // Проверяем, есть ли уже разрешения
+        if (hasPermissions()) {
+            loadFiles(currentPath)
+        } else {
+            showPermissionWarningDialog()
+        }
+    }
+    
+    private fun hasPermissions(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            Environment.isExternalStorageManager()
+        } else {
+            ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
+        }
     }
     
     private fun showPermissionWarningDialog() {
@@ -116,8 +129,6 @@ class MainActivity : AppCompatActivity() {
                 val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
                 intent.data = Uri.parse("package:com.mashinist.archiver")
                 startActivityForResult(intent, MANAGE_STORAGE_CODE)
-            } else {
-                loadFiles(currentPath)
             }
         } else {
             ActivityCompat.requestPermissions(this,
@@ -134,8 +145,6 @@ class MainActivity : AppCompatActivity() {
                 if (Environment.isExternalStorageManager()) {
                     loadFiles(currentPath)
                     Toast.makeText(this, "Разрешение получено!", Toast.LENGTH_SHORT).show()
-                } else {
-                    Toast.makeText(this, "Разрешение не получено", Toast.LENGTH_LONG).show()
                 }
             }
         }
@@ -148,8 +157,6 @@ class MainActivity : AppCompatActivity() {
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 loadFiles(currentPath)
                 Toast.makeText(this, "Готово к работе!", Toast.LENGTH_SHORT).show()
-            } else {
-                Toast.makeText(this, "Нужны разрешения для работы", Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -200,7 +207,7 @@ class MainActivity : AppCompatActivity() {
             pathText.text = path
             
             fileAdapter = FileAdapter(files, selectionMode) { file ->
-                if (file.isDirectory) loadFiles(file.absolutePath)
+                if (file.isDirectory && !selectionMode) loadFiles(file.absolutePath)
             }
             recyclerView.adapter = fileAdapter
             
@@ -220,7 +227,7 @@ class MainActivity : AppCompatActivity() {
         val radioTep70bs = dialogView.findViewById<RadioButton>(R.id.radioTep70bs)
         val radioTep = dialogView.findViewById<RadioButton>(R.id.radioTep)
         
-        selectedFilesText.text = "Выбрано файлов: ${files.size}"
+        selectedFilesText.text = "Выбрано: ${files.size} шт."
         
         dialogView.findViewById<Button>(R.id.cancelBtn).setOnClickListener {
             FileAdapter.selectedFiles.clear()
@@ -259,8 +266,10 @@ class MainActivity : AppCompatActivity() {
         val selectedArchiveText = dialogView.findViewById<TextView>(R.id.selectedArchiveText)
         val outputPathEdit = dialogView.findViewById<EditText>(R.id.outputPathEdit)
         
+        // Имя папки = имя архива без расширения
+        val archiveName = archiveFile.nameWithoutExtension
         selectedArchiveText.text = "Архив: ${archiveFile.name}"
-        outputPathEdit.setText("$currentPath/extracted")
+        outputPathEdit.setText("$currentPath/$archiveName")
         
         dialogView.findViewById<Button>(R.id.cancelExtractBtn).setOnClickListener {
             FileAdapter.selectedFiles.clear()
@@ -275,7 +284,7 @@ class MainActivity : AppCompatActivity() {
             }
             try {
                 archiver.extractArchive(archiveFile.absolutePath, outputDir)
-                Toast.makeText(this, "Распаковано!", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Распаковано в: $outputDir", Toast.LENGTH_SHORT).show()
                 FileAdapter.selectedFiles.clear()
                 loadFiles(currentPath)
                 dialog.dismiss()

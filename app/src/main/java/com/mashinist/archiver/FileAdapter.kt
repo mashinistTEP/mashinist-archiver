@@ -38,9 +38,18 @@ class FileAdapter(
         
         if (file.isDirectory) {
             holder.icon.setImageResource(android.R.drawable.ic_dialog_info)
-            holder.checkBox.visibility = View.GONE
             val count = file.listFiles()?.size ?: 0
             holder.info.text = "Папка | $count элементов"
+            
+            // Теперь папки тоже можно выбирать
+            if (selectionMode) {
+                holder.checkBox.visibility = View.VISIBLE
+                holder.checkBox.isChecked = selectedFiles.contains(file)
+                holder.checkBox.isClickable = false
+                holder.checkBox.isFocusable = false
+            } else {
+                holder.checkBox.visibility = View.GONE
+            }
         } else {
             val extension = file.extension.lowercase()
             when {
@@ -76,12 +85,11 @@ class FileAdapter(
             }
         }
         
-        // Нажатие на всю область файла
+        // Нажатие на всю область
         holder.itemView.setOnClickListener {
-            if (file.isDirectory) {
+            if (file.isDirectory && !selectionMode) {
                 onFileClick(file)
             } else if (selectionMode) {
-                // Переключаем выбор файла
                 if (selectedFiles.contains(file)) {
                     selectedFiles.remove(file)
                     holder.checkBox.isChecked = false
