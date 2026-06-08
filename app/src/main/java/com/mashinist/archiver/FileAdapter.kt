@@ -69,15 +69,19 @@ class FileAdapter(
             if (selectionMode) {
                 holder.checkBox.visibility = View.VISIBLE
                 holder.checkBox.isChecked = selectedFiles.contains(file)
+                holder.checkBox.isClickable = false
+                holder.checkBox.isFocusable = false
             } else {
                 holder.checkBox.visibility = View.GONE
             }
         }
         
+        // Нажатие на всю область файла
         holder.itemView.setOnClickListener {
             if (file.isDirectory) {
                 onFileClick(file)
             } else if (selectionMode) {
+                // Переключаем выбор файла
                 if (selectedFiles.contains(file)) {
                     selectedFiles.remove(file)
                     holder.checkBox.isChecked = false
@@ -92,10 +96,6 @@ class FileAdapter(
     override fun getItemCount() = files.size
     
     fun getSelectedFiles(): List<File> = selectedFiles.toList()
-    
-    fun clearSelection() {
-        selectedFiles.clear()
-    }
     
     private fun formatSize(size: Long): String {
         return when {
