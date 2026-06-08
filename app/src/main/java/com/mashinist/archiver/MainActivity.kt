@@ -13,7 +13,6 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import java.io.File
 import java.io.FileWriter
-import java.io.PrintWriter
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -25,9 +24,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var backBtn: Button
     private lateinit var pathText: TextView
     private lateinit var archiver: MashinistArchiver
+    private lateinit var fileAdapter: FileAdapter
     
     private var currentPath = "/storage/emulated/0"
-    private var selectedFiles = mutableListOf<File>()
     private val STORAGE_PERMISSION_CODE = 100
     
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -58,10 +57,11 @@ class MainActivity : AppCompatActivity() {
             }
             
             createArchiveBtn.setOnClickListener {
+                val selectedFiles = fileAdapter.getSelectedFiles()
                 if (selectedFiles.isEmpty()) {
                     Toast.makeText(this, "Выберите файлы для архивации", Toast.LENGTH_SHORT).show()
                 } else {
-                    showCreateArchiveDialog()
+                    showCreateArchiveDialog(selectedFiles)
                 }
             }
             
@@ -170,26 +170,20 @@ class MainActivity : AppCompatActivity() {
             
             backBtn.isEnabled = File(path).parentFile != null
             
-            recyclerView.adapter = FileAdapter(files) { file ->
+            fileAdapter = FileAdapter(files) { file ->
                 if (file.isDirectory) {
                     loadFiles(file.absolutePath)
-                } else {
-                    if (selectedFiles.contains(file)) {
-                        selectedFiles.remove(file)
-                        Toast.makeText(this, "Убран: ${file.name}", Toast.LENGTH_SHORT).show()
-                    } else {
-                        selectedFiles.add(file)
-                        Toast.makeText(this, "Выбран: ${file.name}", Toast.LENGTH_SHORT).show()
-                    }
                 }
             }
+            
+            recyclerView.adapter = fileAdapter
             logToFile("Files loaded: ${files.size}")
         } catch (e: Exception) {
             logToFile("Error loading files: ${e.message}")
         }
     }
     
-    private fun showCreateArchiveDialog() {
+    private fun showCreateArchiveDialog(selectedFiles: List<File>) {
         val dialogView = layoutInflater.inflate(R.layout.dialog_create_archive, null)
         
         val dialog = MaterialAlertDialogBuilder(this)
@@ -234,7 +228,6 @@ class MainActivity : AppCompatActivity() {
                     archiver.createArchive(selectedFiles[0].absolutePath, outputPath, format)
                     logToFile("Archive created successfully")
                     Toast.makeText(this, "Архив создан: $outputPath", Toast.LENGTH_SHORT).show()
-                    selectedFiles.clear()
                     loadFiles(currentPath)
                     dialog.dismiss()
                 }
