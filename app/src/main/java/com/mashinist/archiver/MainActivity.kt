@@ -36,122 +36,69 @@ class MainActivity : AppCompatActivity() {
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
         
-        try {
-            logToFile("App started")
-            setContentView(R.layout.activity_main)
-            
-            archiver = MashinistArchiver()
-            
-            recyclerView = findViewById(R.id.recyclerView)
-            createArchiveBtn = findViewById(R.id.createArchiveBtn)
-            extractArchiveBtn = findViewById(R.id.extractArchiveBtn)
-            backBtn = findViewById(R.id.backBtn)
-            closeSelectionBtn = findViewById(R.id.closeSelectionBtn)
-            pathText = findViewById(R.id.pathText)
-            confirmSelectionBtn = findViewById(R.id.confirmSelectionBtn)
-            buttonLayout = findViewById(R.id.buttonLayout)
-            
-            recyclerView.layoutManager = LinearLayoutManager(this)
-            
-            // Кликабельный путь
-            pathText.setOnClickListener {
-                showPathNavigator()
+        archiver = MashinistArchiver()
+        
+        recyclerView = findViewById(R.id.recyclerView)
+        createArchiveBtn = findViewById(R.id.createArchiveBtn)
+        extractArchiveBtn = findViewById(R.id.extractArchiveBtn)
+        backBtn = findViewById(R.id.backBtn)
+        closeSelectionBtn = findViewById(R.id.closeSelectionBtn)
+        pathText = findViewById(R.id.pathText)
+        confirmSelectionBtn = findViewById(R.id.confirmSelectionBtn)
+        buttonLayout = findViewById(R.id.buttonLayout)
+        
+        recyclerView.layoutManager = LinearLayoutManager(this)
+        
+        pathText.setOnClickListener { showPathNavigator() }
+        backBtn.setOnClickListener { if (selectionMode) exitSelectionMode() }
+        closeSelectionBtn.setOnClickListener { exitSelectionMode() }
+        
+        createArchiveBtn.setOnClickListener { enterSelectionMode("create") }
+        extractArchiveBtn.setOnClickListener { enterSelectionMode("extract") }
+        
+        confirmSelectionBtn.setOnClickListener {
+            val selectedFiles = fileAdapter.getSelectedFiles()
+            if (selectedFiles.isEmpty()) {
+                Toast.makeText(this, "Не выбрано ни одного файла", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
             }
-            
-            // Кнопка назад (только в режиме выбора)
-            backBtn.setOnClickListener {
-                if (selectionMode) {
+            when (selectionType) {
+                "create" -> {
                     exitSelectionMode()
+                    showCreateArchiveDialogWithFiles(selectedFiles)
+                }
+                "extract" -> {
+                    exitSelectionMode()
+                    showExtractArchiveDialogWithFile(selectedFiles.first())
                 }
             }
-            
-            closeSelectionBtn.setOnClickListener {
-                exitSelectionMode()
-            }
-            
-            createArchiveBtn.setOnClickListener {
-                enterSelectionMode("create")
-            }
-            
-            extractArchiveBtn.setOnClickListener {
-                enterSelectionMode("extract")
-            }
-            
-            confirmSelectionBtn.setOnClickListener {
-                val selectedFiles = fileAdapter.getSelectedFiles()
-                logToFile("Confirm clicked. Selected files: ${selectedFiles.size}")
-                
-                if (selectedFiles.isEmpty()) {
-                    Toast.makeText(this, "Не выбрано ни одного файла", Toast.LENGTH_SHORT).show()
-                    return@setOnClickListener
-                }
-                
-                when (selectionType) {
-                    "create" -> {
-                        exitSelectionMode()
-                        showCreateArchiveDialogWithFiles(selectedFiles)
-                    }
-                    "extract" -> {
-                        val archiveFile = selectedFiles.first()
-                        exitSelectionMode()
-                        showExtractArchiveDialogWithFile(archiveFile)
-                    }
-                }
-            }
-            
-            checkPermissions()
-            
-        } catch (e: Exception) {
-            logToFile("CRASH: ${e.message}")
-            Toast.makeText(this, "Ошибка: ${e.message}", Toast.LENGTH_LONG).show()
         }
-    }
-    
-    private fun logToFile(message: String) {
-        try {
-            val logDir = File(getExternalFilesDir(null), "logs")
-            if (!logDir.exists()) logDir.mkdirs()
-            val logFile = File(logDir, "app.log")
-            val timestamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
-            FileWriter(logFile, true).use { writer ->
-                writer.append("[$timestamp] $message\n")
-            }
-        } catch (e: Exception) {}
-    }
-    
-    private fun showPathNavigator() {
-        val pathParts = currentPath.split("/").filter { it.isNotEmpty() }
-        val displayParts = mutableListOf("/")
-        displayParts.addAll(pathParts)
         
+        // Показываем диалог с предупреждением
+        showPermissionWarningDialog()
+    }
+    
+    private fun showPermissionWarningDialog() {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_permission, null)
         val dialog = MaterialAlertDialogBuilder(this)
-            .setTitle("Перейти к папке")
-            .setItems(displayParts.toTypedArray()) { _, which ->
-                if (which == 0) {
-                    loadFiles("/storage/emulated/0")
-                } else {
-                    val newPath = "/" + pathParts.take(which).joinToString("/")
-                    loadFiles(newPath)
-                }
-            }
-            .setNegativeButton("Отмена", null)
+            .setView(dialogView)
+            .setCancelable(false)
             .create()
         
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
-        dialog.show()
-    }
-    
-    private fun checkPermissions() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
-            != PackageManager.PERMISSION_GRANTED) {
+        
+        dialogView.findViewById<Button>(R.id.continueBtn).setOnClickListener {
+            dialog.dismiss()
+            // После нажатия "Продолжить" запрашиваем системное разрешение
             ActivityCompat.requestPermissions(this,
                 arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE, 
                        Manifest.permission.WRITE_EXTERNAL_STORAGE),
                 STORAGE_PERMISSION_CODE)
-        } else {
-            loadFiles(currentPath)
         }
+        
+        dialog.show()
     }
     
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, 
@@ -160,9 +107,28 @@ class MainActivity : AppCompatActivity() {
         if (requestCode == STORAGE_PERMISSION_CODE) {
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 loadFiles(currentPath)
-                Toast.makeText(this, "Разрешения получены", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Готово к работе!", Toast.LENGTH_SHORT).show()
+            } else {
+                // Если не дал разрешение, показываем диалог снова
+                Toast.makeText(this, "Нужны разрешения для работы", Toast.LENGTH_LONG).show()
+                showPermissionWarningDialog()
             }
         }
+    }
+    
+    private fun showPathNavigator() {
+        val pathParts = currentPath.split("/").filter { it.isNotEmpty() }
+        val displayParts = mutableListOf("/")
+        displayParts.addAll(pathParts)
+        
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Перейти к папке")
+            .setItems(displayParts.toTypedArray()) { _, which ->
+                if (which == 0) loadFiles("/storage/emulated/0")
+                else loadFiles("/" + pathParts.take(which).joinToString("/"))
+            }
+            .setNegativeButton("Отмена", null)
+            .show()
     }
     
     private fun enterSelectionMode(type: String) {
@@ -189,30 +155,24 @@ class MainActivity : AppCompatActivity() {
     private fun loadFiles(path: String) {
         try {
             val dir = File(path)
-            val files = dir.listFiles()?.toList()?.sortedWith(compareBy({ !it.isDirectory }, { it.name.lowercase() })) ?: emptyList()
+            val files = dir.listFiles()?.toList()
+                ?.sortedWith(compareBy({ !it.isDirectory }, { it.name.lowercase() })) 
+                ?: emptyList()
             currentPath = path
             pathText.text = path
             
             fileAdapter = FileAdapter(files, selectionMode) { file ->
-                if (file.isDirectory) {
-                    loadFiles(file.absolutePath)
-                }
+                if (file.isDirectory) loadFiles(file.absolutePath)
             }
-            
             recyclerView.adapter = fileAdapter
-            logToFile("Files loaded: ${files.size}, selectionMode: $selectionMode")
-            
         } catch (e: Exception) {
-            logToFile("Error loading files: ${e.message}")
+            Toast.makeText(this, "Ошибка: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
     
     private fun showCreateArchiveDialogWithFiles(files: List<File>) {
         val dialogView = layoutInflater.inflate(R.layout.dialog_create_archive, null)
-        val dialog = MaterialAlertDialogBuilder(this)
-            .setView(dialogView)
-            .create()
-        
+        val dialog = MaterialAlertDialogBuilder(this).setView(dialogView).create()
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
         
         val archiveNameEdit = dialogView.findViewById<EditText>(R.id.archiveNameEdit)
@@ -223,28 +183,20 @@ class MainActivity : AppCompatActivity() {
         
         selectedFilesText.text = "Выбрано файлов: ${files.size}"
         
-        dialogView.findViewById<Button>(R.id.cancelBtn).setOnClickListener {
-            dialog.dismiss()
-        }
-        
+        dialogView.findViewById<Button>(R.id.cancelBtn).setOnClickListener { dialog.dismiss() }
         dialogView.findViewById<Button>(R.id.createBtn).setOnClickListener {
             val fileName = archiveNameEdit.text.toString()
-            
             if (fileName.isEmpty()) {
                 Toast.makeText(this, "Введите имя архива", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            
             val format = when {
                 radioTep70bs.isChecked -> "tep70bs"
                 radioTep.isChecked -> "tep"
                 else -> "mashinist"
             }
-            
-            val outputPath = "$currentPath/$fileName.$format"
-            
             try {
-                archiver.createArchive(files[0].absolutePath, outputPath, format)
+                archiver.createArchive(files[0].absolutePath, "$currentPath/$fileName.$format", format)
                 Toast.makeText(this, "Архив создан!", Toast.LENGTH_SHORT).show()
                 loadFiles(currentPath)
                 dialog.dismiss()
@@ -252,16 +204,12 @@ class MainActivity : AppCompatActivity() {
                 Toast.makeText(this, "Ошибка: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }
-        
         dialog.show()
     }
     
     private fun showExtractArchiveDialogWithFile(archiveFile: File) {
         val dialogView = layoutInflater.inflate(R.layout.dialog_extract_archive, null)
-        val dialog = MaterialAlertDialogBuilder(this)
-            .setView(dialogView)
-            .create()
-        
+        val dialog = MaterialAlertDialogBuilder(this).setView(dialogView).create()
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
         
         val selectedArchiveText = dialogView.findViewById<TextView>(R.id.selectedArchiveText)
@@ -270,28 +218,22 @@ class MainActivity : AppCompatActivity() {
         selectedArchiveText.text = "Архив: ${archiveFile.name}"
         outputPathEdit.setText("$currentPath/extracted")
         
-        dialogView.findViewById<Button>(R.id.cancelExtractBtn).setOnClickListener {
-            dialog.dismiss()
-        }
-        
+        dialogView.findViewById<Button>(R.id.cancelExtractBtn).setOnClickListener { dialog.dismiss() }
         dialogView.findViewById<Button>(R.id.extractBtn).setOnClickListener {
             val outputDir = outputPathEdit.text.toString()
-            
             if (outputDir.isEmpty()) {
                 Toast.makeText(this, "Укажите путь распаковки", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            
             try {
                 archiver.extractArchive(archiveFile.absolutePath, outputDir)
-                Toast.makeText(this, "Распаковано в: $outputDir", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Распаковано!", Toast.LENGTH_SHORT).show()
                 loadFiles(currentPath)
                 dialog.dismiss()
             } catch (e: Exception) {
                 Toast.makeText(this, "Ошибка: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }
-        
         dialog.show()
     }
 }
