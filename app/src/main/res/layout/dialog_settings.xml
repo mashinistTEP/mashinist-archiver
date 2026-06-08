@@ -24,73 +24,15 @@
         android:layout_marginBottom="8dp"/>
     
     <RadioGroup
-        android:id="@+id/defaultFormatGroup"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp">
-        
-        <RadioButton
-            android:id="@+id/radioDefaultMashinist"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text=".mashinist"
-            android:textColor="#FFFFFF"
-            android:buttonTint="#CE93D8"
-            android:checked="true"
-            android:padding="8dp"/>
-        
-        <RadioButton
-            android:id="@+id/radioDefaultTep70bs"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text=".tep70bs"
-            android:textColor="#FFFFFF"
-            android:buttonTint="#CE93D8"
-            android:padding="8dp"/>
-        
-        <RadioButton
-            android:id="@+id/radioDefaultTep"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text=".tep"
-            android:textColor="#FFFFFF"
-            android:buttonTint="#CE93D8"
-            android:padding="8dp"/>
+        android:layout_marginBottom="24dp">
+        <RadioButton android:id="@+id/radioDefaultMashinist" android:layout_width="match_parent" android:layout_height="wrap_content" android:text=".mashinist" android:textColor="#FFFFFF" android:buttonTint="#CE93D8" android:checked="true" android:padding="8dp"/>
+        <RadioButton android:id="@+id/radioDefaultTep70bs" android:layout_width="match_parent" android:layout_height="wrap_content" android:text=".tep70bs" android:textColor="#FFFFFF" android:buttonTint="#CE93D8" android:padding="8dp"/>
+        <RadioButton android:id="@+id/radioDefaultTep" android:layout_width="match_parent" android:layout_height="wrap_content" android:text=".tep" android:textColor="#FFFFFF" android:buttonTint="#CE93D8" android:padding="8dp"/>
     </RadioGroup>
     
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Путь распаковки:"
-        android:textColor="#CE93D8"
-        android:textSize="14sp"
-        android:layout_marginBottom="8dp"/>
-    
-    <EditText
-        android:id="@+id/defaultExtractPathEdit"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:text="/storage/emulated/0/Extracted"
-        android:textColor="#FFFFFF"
-        android:backgroundTint="#AB47BC"
-        android:padding="12dp"
-        android:layout_marginBottom="16dp"/>
-    
-    <Button
-        android:id="@+id/saveSettingsBtn"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:text="Сохранить"
-        android:textColor="#FFFFFF"
-        android:backgroundTint="#9C27B0"
-        android:layout_marginBottom="8dp"/>
-    
-    <Button
-        android:id="@+id/closeSettingsBtn"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:text="Закрыть"
-        android:textColor="#FFFFFF"
-        android:backgroundTint="#424242"/>
+    <Button android:id="@+id/saveSettingsBtn" android:layout_width="match_parent" android:layout_height="48dp" android:text="Сохранить" android:textColor="#FFFFFF" android:backgroundTint="#9C27B0" android:layout_marginBottom="8dp"/>
+    <Button android:id="@+id/closeSettingsBtn" android:layout_width="match_parent" android:layout_height="48dp" android:text="Закрыть" android:textColor="#FFFFFF" android:backgroundTint="#424242"/>
     
 </LinearLayout>

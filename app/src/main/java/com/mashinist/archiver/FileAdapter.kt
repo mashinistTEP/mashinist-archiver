@@ -12,8 +12,7 @@ import java.io.File
 class FileAdapter(
     private val files: List<File>,
     private val selectionMode: Boolean,
-    private val onFileClick: (File) -> Unit,
-    private val onFileLongClick: ((File) -> Unit)? = null
+    private val onFileClick: (File) -> Unit
 ) : RecyclerView.Adapter<FileAdapter.ViewHolder>() {
     
     companion object {
@@ -28,8 +27,7 @@ class FileAdapter(
     }
     
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        val view = LayoutInflater.from(parent.context)
-            .inflate(R.layout.item_file, parent, false)
+        val view = LayoutInflater.from(parent.context).inflate(R.layout.item_file, parent, false)
         return ViewHolder(view)
     }
     
@@ -41,86 +39,61 @@ class FileAdapter(
             holder.icon.setImageResource(android.R.drawable.ic_dialog_info)
             val count = file.listFiles()?.size ?: 0
             holder.info.text = "Папка | $count элементов"
-            
-            if (selectionMode) {
-                holder.checkBox.visibility = View.VISIBLE
-                holder.checkBox.isChecked = selectedFiles.contains(file)
-                holder.checkBox.isClickable = false
-            } else {
-                holder.checkBox.visibility = View.GONE
-            }
         } else {
-            val extension = file.extension.lowercase()
-            when {
-                extension in listOf("mashinist", "tep70bs", "tep") -> {
-                    holder.icon.setImageResource(android.R.drawable.ic_menu_save)
-                    holder.info.text = "Архив | ${formatSize(file.length())}"
-                }
-                extension in listOf("jpg", "jpeg", "png", "gif", "bmp", "webp") -> {
-                    holder.icon.setImageResource(android.R.drawable.ic_menu_gallery)
-                    holder.info.text = "Изображение | ${formatSize(file.length())}"
-                }
-                extension in listOf("mp4", "avi", "mkv", "mov") -> {
-                    holder.icon.setImageResource(android.R.drawable.ic_media_play)
-                    holder.info.text = "Видео | ${formatSize(file.length())}"
-                }
-                extension in listOf("mp3", "wav", "ogg", "flac") -> {
-                    holder.icon.setImageResource(android.R.drawable.ic_media_play)
-                    holder.info.text = "Аудио | ${formatSize(file.length())}"
-                }
-                else -> {
-                    holder.icon.setImageResource(android.R.drawable.ic_menu_gallery)
-                    holder.info.text = "Файл | ${formatSize(file.length())}"
-                }
-            }
-            
-            if (selectionMode) {
-                holder.checkBox.visibility = View.VISIBLE
-                holder.checkBox.isChecked = selectedFiles.contains(file)
-                holder.checkBox.isClickable = false
-            } else {
-                holder.checkBox.visibility = View.GONE
-            }
+            val ext = file.extension.lowercase()
+            holder.icon.setImageResource(when {
+                ext in listOf("mashinist", "tep70bs", "tep") -> android.R.drawable.ic_menu_save
+                ext in listOf("jpg", "jpeg", "png", "gif") -> android.R.drawable.ic_menu_gallery
+                else -> android.R.drawable.ic_menu_gallery
+            })
+            holder.info.text = "Файл | ${formatSize(file.length())}"
         }
         
-        // Обычное нажатие
+        if (selectionMode) {
+            holder.checkBox.visibility = View.VISIBLE
+            holder.checkBox.isChecked = selectedFiles.contains(file)
+        } else {
+            holder.checkBox.visibility = View.GONE
+        }
+        
         holder.itemView.setOnClickListener {
             if (file.isDirectory && !selectionMode) {
                 onFileClick(file)
             } else if (selectionMode) {
-                toggleSelection(file, holder)
+                if (file.isDirectory) {
+                    onFileClick(file)
+                } else {
+                    if (selectedFiles.contains(file)) {
+                        selectedFiles.remove(file)
+                        holder.checkBox.isChecked = false
+                    } else {
+                        selectedFiles.add(file)
+                        holder.checkBox.isChecked = true
+                    }
+                }
             }
         }
         
-        // Длинное нажатие для папок в режиме выбора
-        if (file.isDirectory && selectionMode) {
-            holder.itemView.setOnLongClickListener {
-                toggleSelection(file, holder)
+        holder.itemView.setOnLongClickListener {
+            if (selectionMode && file.isDirectory) {
+                if (selectedFiles.contains(file)) {
+                    selectedFiles.remove(file)
+                    holder.checkBox.isChecked = false
+                } else {
+                    selectedFiles.add(file)
+                    holder.checkBox.isChecked = true
+                }
                 true
-            }
-        }
-    }
-    
-    private fun toggleSelection(file: File, holder: ViewHolder) {
-        if (selectedFiles.contains(file)) {
-            selectedFiles.remove(file)
-            holder.checkBox.isChecked = false
-        } else {
-            selectedFiles.add(file)
-            holder.checkBox.isChecked = true
+            } else false
         }
     }
     
     override fun getItemCount() = files.size
-    
     fun getSelectedFiles(): List<File> = selectedFiles.toList()
     
-    private fun formatSize(size: Long): String {
-        return when {
-            size < 1024 -> "$size B"
-            size < 1024 * 1024 -> "${size / 1024} KB"
-            size < 1024 * 1024 * 1024 -> "${"%.1f".format(size / (1024.0 * 1024.0))} MB"
-            else -> "${"%.2f".format(size / (1024.0 * 1024.0 * 1024.0))} GB"
-        }
+    private fun formatSize(size: Long): String = when {
+        size < 1024 -> "$size B"
+        size < 1024 * 1024 -> "${size / 1024} KB"
+        else -> "${size / (1024 * 1024)} MB"
     }
 }
