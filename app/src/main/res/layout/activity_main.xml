@@ -46,6 +46,15 @@
             android:textColor="#E1BEE7"
             android:textSize="12sp"
             android:layout_gravity="center_vertical"/>
+        
+        <Button
+            android:id="@+id/confirmSelectionBtn"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:text="✓"
+            android:textColor="#FFFFFF"
+            android:backgroundTint="#4CAF50"
+            android:visibility="gone"/>
     </LinearLayout>
     
     <LinearLayout

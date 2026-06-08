@@ -11,6 +11,7 @@ import java.io.File
 
 class FileAdapter(
     private val files: List<File>,
+    private val selectionMode: Boolean,
     private val onFileClick: (File) -> Unit
 ) : RecyclerView.Adapter<FileAdapter.ViewHolder>() {
     
@@ -33,13 +34,18 @@ class FileAdapter(
         val file = files[position]
         holder.name.text = file.name
         
+        if (selectionMode) {
+            holder.checkBox.visibility = View.VISIBLE
+        } else {
+            holder.checkBox.visibility = View.GONE
+        }
+        
         if (file.isDirectory) {
             holder.icon.setImageResource(android.R.drawable.ic_dialog_info)
             holder.checkBox.visibility = View.GONE
             val count = file.listFiles()?.size ?: 0
             holder.info.text = "Папка | $count элементов"
         } else {
-            holder.checkBox.visibility = View.VISIBLE
             holder.checkBox.isChecked = selectedFiles.contains(file)
             
             val extension = file.extension
@@ -58,23 +64,13 @@ class FileAdapter(
         holder.itemView.setOnClickListener {
             if (file.isDirectory) {
                 onFileClick(file)
-            } else {
-                // Переключаем выбор файла
+            } else if (selectionMode) {
                 if (selectedFiles.contains(file)) {
                     selectedFiles.remove(file)
                 } else {
                     selectedFiles.add(file)
                 }
                 holder.checkBox.isChecked = selectedFiles.contains(file)
-                onFileClick(file)
-            }
-        }
-        
-        holder.checkBox.setOnCheckedChangeListener { _, isChecked ->
-            if (isChecked) {
-                selectedFiles.add(file)
-            } else {
-                selectedFiles.remove(file)
             }
         }
     }
