@@ -4,12 +4,14 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.os.Environment
+import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import java.io.File
 
 class MainActivity : AppCompatActivity() {
@@ -20,7 +22,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var pathText: TextView
     private lateinit var archiver: MashinistArchiver
     
-    private var currentPath = Environment.getExternalStorageDirectory().absolutePath
+    private var currentPath = "/storage/emulated/0"
     private val STORAGE_PERMISSION_CODE = 100
     
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -48,14 +50,32 @@ class MainActivity : AppCompatActivity() {
     }
     
     private fun checkPermissions() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
-            != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this,
-                arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE, 
-                       Manifest.permission.WRITE_EXTERNAL_STORAGE),
-                STORAGE_PERMISSION_CODE)
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+            if (!Environment.isExternalStorageManager()) {
+                val intent = android.content.Intent(android.provider.Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
+                startActivity(intent)
+            } else {
+                loadFiles(currentPath)
+            }
         } else {
-            loadFiles(currentPath)
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
+                != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this,
+                    arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE, 
+                           Manifest.permission.WRITE_EXTERNAL_STORAGE),
+                    STORAGE_PERMISSION_CODE)
+            } else {
+                loadFiles(currentPath)
+            }
+        }
+    }
+    
+    override fun onResume() {
+        super.onResume()
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+            if (Environment.isExternalStorageManager()) {
+                loadFiles(currentPath)
+            }
         }
     }
     
@@ -78,24 +98,31 @@ class MainActivity : AppCompatActivity() {
         recyclerView.adapter = FileAdapter(files) { file ->
             if (file.isDirectory) {
                 loadFiles(file.absolutePath)
-            } else {
-                showFileOptions(file)
             }
         }
     }
     
     private fun showCreateArchiveDialog() {
-        val builder = android.app.AlertDialog.Builder(this)
-        builder.setTitle("Создать архив")
+        val dialogView = layoutInflater.inflate(R.layout.dialog_create_archive, null)
         
-        val view = layoutInflater.inflate(R.layout.dialog_create_archive, null)
-        val archiveNameEdit = view.findViewById<EditText>(R.id.archiveNameEdit)
-        val radioMashinist = view.findViewById<RadioButton>(R.id.radioMashinist)
-        val radioTep70bs = view.findViewById<RadioButton>(R.id.radioTep70bs)
-        val radioTep = view.findViewById<RadioButton>(R.id.radioTep)
+        val dialog = MaterialAlertDialogBuilder(this)
+            .setView(dialogView)
+            .create()
         
-        builder.setView(view)
-        builder.setPositiveButton("Создать") { dialog, _ ->
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        
+        val archiveNameEdit = dialogView.findViewById<EditText>(R.id.archiveNameEdit)
+        val radioMashinist = dialogView.findViewById<RadioButton>(R.id.radioMashinist)
+        val radioTep70bs = dialogView.findViewById<RadioButton>(R.id.radioTep70bs)
+        val radioTep = dialogView.findViewById<RadioButton>(R.id.radioTep)
+        val cancelBtn = dialogView.findViewById<Button>(R.id.cancelBtn)
+        val createBtn = dialogView.findViewById<Button>(R.id.createBtn)
+        
+        cancelBtn.setOnClickListener {
+            dialog.dismiss()
+        }
+        
+        createBtn.setOnClickListener {
             val fileName = archiveNameEdit.text.toString()
             val format = when {
                 radioTep70bs.isChecked -> "tep70bs"
@@ -107,65 +134,40 @@ class MainActivity : AppCompatActivity() {
                 val outputPath = "$currentPath/$fileName.$format"
                 archiver.createArchive(currentPath + "/test.txt", outputPath, format)
                 Toast.makeText(this, "Архив создан: $outputPath", Toast.LENGTH_SHORT).show()
+                dialog.dismiss()
             }
         }
-        builder.setNegativeButton("Отмена", null)
-        builder.show()
+        
+        dialog.show()
     }
     
     private fun showExtractArchiveDialog() {
-        val builder = android.app.AlertDialog.Builder(this)
-        builder.setTitle("Распаковать архив")
+        val dialogView = layoutInflater.inflate(R.layout.dialog_extract_archive, null)
         
-        val view = layoutInflater.inflate(R.layout.dialog_extract_archive, null)
-        val outputPathEdit = view.findViewById<EditText>(R.id.outputPathEdit)
+        val dialog = MaterialAlertDialogBuilder(this)
+            .setView(dialogView)
+            .create()
         
-        builder.setView(view)
-        builder.setPositiveButton("Распаковать") { dialog, _ ->
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        
+        val outputPathEdit = dialogView.findViewById<EditText>(R.id.outputPathEdit)
+        val cancelExtractBtn = dialogView.findViewById<Button>(R.id.cancelExtractBtn)
+        val extractBtn = dialogView.findViewById<Button>(R.id.extractBtn)
+        
+        cancelExtractBtn.setOnClickListener {
+            dialog.dismiss()
+        }
+        
+        extractBtn.setOnClickListener {
             val archivePath = outputPathEdit.text.toString()
             if (archivePath.isNotEmpty()) {
                 val outputDir = currentPath + "/extracted"
                 archiver.extractArchive(archivePath, outputDir)
                 Toast.makeText(this, "Распаковано в: $outputDir", Toast.LENGTH_SHORT).show()
+                dialog.dismiss()
             }
         }
-        builder.setNegativeButton("Отмена", null)
-        builder.show()
-    }
-    
-    private fun showFileOptions(file: File) {
-        val options = arrayOf("Сжать в архив", "Распаковать (если архив)", "Удалить")
-        val builder = android.app.AlertDialog.Builder(this)
-        builder.setTitle(file.name)
-        builder.setItems(options) { _, which ->
-            when (which) {
-                0 -> compressFile(file)
-                1 -> {
-                    val outputDir = file.parent + "/extracted"
-                    archiver.extractArchive(file.absolutePath, outputDir)
-                    Toast.makeText(this, "Распаковано!", Toast.LENGTH_SHORT).show()
-                }
-                2 -> {
-                    file.delete()
-                    loadFiles(currentPath)
-                }
-            }
-        }
-        builder.show()
-    }
-    
-    private fun compressFile(file: File) {
-        val extensions = arrayOf(".mashinist", ".tep70bs", ".tep")
-        val formats = arrayOf("mashinist", "tep70bs", "tep")
         
-        val builder = android.app.AlertDialog.Builder(this)
-        builder.setTitle("Выберите формат")
-        builder.setItems(extensions) { _, which ->
-            val outputPath = file.absolutePath + extensions[which]
-            archiver.createArchive(file.absolutePath, outputPath, formats[which])
-            loadFiles(currentPath)
-            Toast.makeText(this, "Архив создан: $outputPath", Toast.LENGTH_SHORT).show()
-        }
-        builder.show()
+        dialog.show()
     }
 }
