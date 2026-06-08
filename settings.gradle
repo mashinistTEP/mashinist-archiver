@@ -1,0 +1,2 @@
+rootProject.name = "MashinistArchiver"
+include ':app'

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.MashinistArchiver" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="colorPrimary">@color/purple_500</item>
+        <item name="colorPrimaryDark">@color/purple_900</item>
+        <item name="colorAccent">@color/purple_300</item>
+        <item name="android:windowBackground">@color/purple_900</item>
+        <item name="android:statusBarColor">@color/purple_900</item>
+    </style>
+</resources>

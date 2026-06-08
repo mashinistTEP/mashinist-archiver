@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:background="#2D004D">
+    
+    <!-- Заголовок диалога -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="📂 Распаковка архива"
+        android:textColor="#FFFFFF"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="16dp"/>
+    
+    <!-- Выбор архива -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Выберите архив:"
+        android:textColor="#CE93D8"
+        android:textSize="14sp"
+        android:layout_marginBottom="8dp"/>
+    
+    <Button
+        android:id="@+id/selectArchiveBtn"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:text="📁 Выбрать архив"
+        android:textColor="#FFFFFF"
+        android:backgroundTint="#6A1B9A"
+        android:layout_marginBottom="8dp"/>
+    
+    <TextView
+        android:id="@+id/selectedArchiveText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Не выбран"
+        android:textColor="#9C27B0"
+        android:textSize="12sp"
+        android:layout_marginBottom="16dp"/>
+    
+    <!-- Информация об архиве -->
+    <LinearLayout
+        android:id="@+id/archiveInfoLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="#3B0066"
+        android:padding="12dp"
+        android:layout_marginBottom="16dp"
+        android:visibility="gone">
+        
+        <TextView
+            android:id="@+id/archiveTypeText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Тип: TEP70BS"
+            android:textColor="#CE93D8"
+            android:textSize="12sp"/>
+        
+        <TextView
+            android:id="@+id/archiveContentText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Содержит: document.pdf"
+            android:textColor="#CE93D8"
+            android:textSize="12sp"/>
+        
+        <TextView
+            android:id="@+id/archiveSizeText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Размер: 2.4 MB"
+            android:textColor="#CE93D8"
+            android:textSize="12sp"/>
+    </LinearLayout>
+    
+    <!-- Папка для распаковки -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Распаковать в:"
+        android:textColor="#CE93D8"
+        android:textSize="14sp"
+        android:layout_marginBottom="8dp"/>
+    
+    <EditText
+        android:id="@+id/outputPathEdit"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:text="/storage/emulated/0/Extracted"
+        android:textColor="#FFFFFF"
+        android:backgroundTint="#AB47BC"
+        android:padding="12dp"
+        android:layout_marginBottom="16dp"/>
+    
+    <!-- Кнопки -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+        
+        <Button
+            android:id="@+id/cancelExtractBtn"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="8dp"
+            android:text="Отмена"
+            android:textColor="#FFFFFF"
+            android:backgroundTint="#424242"/>
+        
+        <Button
+            android:id="@+id/extractBtn"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:text="Распаковать"
+            android:textColor="#FFFFFF"
+            android:backgroundTint="#9C27B0"/>
+    </LinearLayout>
+    
+</LinearLayout>

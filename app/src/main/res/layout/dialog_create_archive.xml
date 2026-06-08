@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:background="#2D004D">
+    
+    <!-- Заголовок диалога -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="📦 Создание архива"
+        android:textColor="#FFFFFF"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="16dp"/>
+    
+    <!-- Выбор файлов -->
+    <Button
+        android:id="@+id/selectFilesBtn"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:text="📁 Выбрать файлы"
+        android:textColor="#FFFFFF"
+        android:backgroundTint="#6A1B9A"
+        android:layout_marginBottom="8dp"/>
+    
+    <TextView
+        android:id="@+id/selectedFilesText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Выбрано: 0 файлов"
+        android:textColor="#9C27B0"
+        android:textSize="12sp"
+        android:layout_marginBottom="16dp"/>
+    
+    <!-- Имя архива -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Имя архива:"
+        android:textColor="#CE93D8"
+        android:textSize="14sp"
+        android:layout_marginBottom="8dp"/>
+    
+    <EditText
+        android:id="@+id/archiveNameEdit"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:hint="мой_архив"
+        android:textColor="#FFFFFF"
+        android:textColorHint="#6A1B9A"
+        android:backgroundTint="#AB47BC"
+        android:padding="12dp"
+        android:layout_marginBottom="16dp"/>
+    
+    <!-- Выбор формата -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Формат архива:"
+        android:textColor="#CE93D8"
+        android:textSize="14sp"
+        android:layout_marginBottom="8dp"/>
+    
+    <RadioGroup
+        android:id="@+id/formatRadioGroup"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp">
+        
+        <RadioButton
+            android:id="@+id/radioMashinist"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text=".mashinist"
+            android:textColor="#FFFFFF"
+            android:buttonTint="#CE93D8"
+            android:checked="true"
+            android:padding="8dp"/>
+        
+        <RadioButton
+            android:id="@+id/radioTep70bs"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text=".tep70bs"
+            android:textColor="#FFFFFF"
+            android:buttonTint="#CE93D8"
+            android:padding="8dp"/>
+        
+        <RadioButton
+            android:id="@+id/radioTep"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text=".tep"
+            android:textColor="#FFFFFF"
+            android:buttonTint="#CE93D8"
+            android:padding="8dp"/>
+    </RadioGroup>
+    
+    <!-- Кнопки -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+        
+        <Button
+            android:id="@+id/cancelBtn"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="8dp"
+            android:text="Отмена"
+            android:textColor="#FFFFFF"
+            android:backgroundTint="#424242"/>
+        
+        <Button
+            android:id="@+id/createBtn"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:text="Создать"
+            android:textColor="#FFFFFF"
+            android:backgroundTint="#9C27B0"/>
+    </LinearLayout>
+    
+</LinearLayout>
