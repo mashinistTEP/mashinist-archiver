@@ -191,9 +191,9 @@ class MainActivity : AppCompatActivity() {
             val dir = File(path)
             val files = dir.listFiles()?.toList()?.sortedWith(compareBy({ !it.isDirectory }, { it.name.lowercase() })) ?: emptyList()
             currentPath = path; pathText.text = path
-            fileAdapter = FileAdapter(files, selectionMode, { f ->
+            fileAdapter = FileAdapter(files, selectionMode) { f ->
                 if (f.isDirectory && !selectionMode) loadFiles(f.absolutePath)
-            }, null)
+            }
             recyclerView.adapter = fileAdapter
         } catch (e: Exception) { Toast.makeText(this, "Ошибка", Toast.LENGTH_SHORT).show() }
     }
