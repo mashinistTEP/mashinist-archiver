@@ -18,7 +18,7 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Для работы с файлами понадобятся следующие разрешения. На следующих окнах нажмите \"Разрешить\""
+        android:text="Для работы с файлами понадобятся следующие разрешения. На следующих окнах нажмите кнопку Разрешить"
         android:textColor="#CE93D8"
         android:textSize="14sp"
         android:layout_marginBottom="24dp"/>
